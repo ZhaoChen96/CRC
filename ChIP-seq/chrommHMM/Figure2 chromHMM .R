@@ -95,4 +95,48 @@ plotHeatmap(file = file7,time = "7weeks")
 plotHeatmap(file = file10,time = "10weeks")
 
 
+# line plot ---------------------------------------------------------------
+rm(list = ls())
+library(ggplot2)
+geneCountDir <- "~/project/colon cancer/chip-seq/chromHMM/geneCount/" 
+heterochromatin_color = brewer.pal(n = 11, name = "PRGn")[3]
+promoter_color = brewer.pal(n = 9, name = "Greens")[8]
+enhancer_color = brewer.pal(n = 9, name = "Reds")[8]
+repressed_color = brewer.pal(n = 9, name = "Blues")[7]
+quit_color = brewer.pal(n = 9, name = "Greys")[4]
+
+plotLine <- function(filename) {
+  file <- read.delim(filename)
+  region <- paste(unlist(strsplit(basename(filename),split = "_"))[2],unlist(strsplit(basename(filename),split = "_"))[3],sep = "")
+  file$element <- rep(c("Enhancer","Repressed","Enhancer","Quiescent","Heterochromatin","Enhancer","Enhancer","Promoter",
+                        "Promoter","Promoter","Promoter","Promoter","Repressed"),5)
+  file$time <- factor(file$time,levels = c("week0","week2","week4","week7","week10"))
+  file$element <- factor(file$element,levels = c("Quiescent","Enhancer","Repressed","Heterochromatin","Promoter"))
+  file$state <- factor(file$state,levels = c("E12","E13","E9","E10","E1","E11","E3","E2","E6","E7","E4","E5","E8"))
+  
+  data = aggregate(file$percent, by=list(file$element, file$time), FUN=sum)
+  colnames(data) = c("element", "time", "coverage")
+  
+  ggplot(data=data, aes(x=time, y=coverage, group=element, color=element)) +
+    geom_line(size=1.1) + geom_point(size=2.5)+
+    labs(x="", y = "Genomic coverage (%)",colour=NULL) +
+    scale_x_discrete(expand = c(0.05,0.05),labels=c("0week","2weeks","4weeks","7weeks","10weeks")) +
+    scale_y_continuous(expand = c(0,0),limits = c(0,60),breaks = c(0,10,20,30,40,50,60)) +
+    scale_color_manual(values=c(quit_color,enhancer_color,repressed_color,heterochromatin_color,promoter_color),
+                       limits=c("Quiescent","Enhancer","Repressed","Heterochromatin","Promoter")) +
+    theme_classic(base_size = 18,base_family = "sans",base_line_size = 1.1) + 
+    theme(aspect.ratio = 0.6/1,
+          axis.text.y = element_text(size=18,colour = "black"), 
+          axis.text.x = element_text(size = 18,colour = "black",angle = 45,hjust = 1),
+          axis.title.y = element_text(size = 18,colour = "black"),
+          axis.ticks.length = unit(2,"mm")) +
+    theme(legend.position = "top",
+          legend.text = element_text(size = 18)) +
+    guides(colour = guide_legend(nrow = 2,byrow = TRUE))
+  ggsave(paste(geneCountDir,region,"/line_plot.pdf",sep = ""), height = 5, width = 6.5)
+}
+
+plotLine(filename = "~/project/colon cancer/chip-seq/chromHMM/geneCount/genebody0bp/mm10_genebody_0bp_freq.txt")
+plotLine(filename = "~/project/colon cancer/chip-seq/chromHMM/geneCount/genebody2000bp/mm10_genebody_2000bp_freq.txt")
+plotLine(filename = "~/project/colon cancer/chip-seq/chromHMM/geneCount/genetss4000bp/mm10_genetss_4000bp_freq.txt")
 
