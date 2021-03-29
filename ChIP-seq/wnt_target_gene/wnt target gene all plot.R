@@ -310,5 +310,89 @@ plotLine <- function(filename,limits,number) {
 plotLine(filename = "~/project/colon cancer/wnt target gene/profile/wnt_enhancer_24_target_gene_scale_line.txt",limits = c(0,15),number = 24)
 plotLine(filename = "~/project/colon cancer/wnt target gene/profile/wnt_44_target_gene_scale_line.txt",limits = c(0,10),number = 44)
 
+# wnt gene in TCGA --------------------------------------------------------
+rm(list = ls())
+library(biomaRt)
+
+file <- read.delim("~/project/colon cancer/wnt target gene/wnt_44_target_gene.txt",sep = "\t",header = FALSE,col.names = "gene_name")
+#file <- read.delim("~/project/colon cancer/wnt target gene/wnt_enhancer_24_target_gene.txt",sep = "\t",header = FALSE,col.names = "gene_name")
+tcga <- read.delim("~/project/colon cancer/TCGA/COAD_FPKM_add_symbol.txt",sep = "\t",check.names = FALSE)
+
+mouse <- useDataset("mmusculus_gene_ensembl", mart = useMart("ensembl"))
+human <- useMart("ensembl",dataset = "hsapiens_gene_ensembl")
+bm <- getLDS(attributes = c("external_gene_name","ensembl_gene_id"),mart = mouse,filters = "external_gene_name",
+             attributesL = c("external_gene_name","ensembl_gene_id"),martL = human,values = file$gene_name)
+
+data <- tcga[tcga$Gene.name %in% bm$Gene.name.1,]
+
+library(reshape2)
+df <- melt(data = data,id.vars = "Gene.name",variable.name = "sample",value.name = "value")
+df <- cbind(df,type = c(rep("Normal",each=42*nrow(data)),rep("Tumor",each=599*nrow(data))))
+df <- na.omit(df)
+
+library(ggpubr)
+library(ggplot2)
+p <- ggplot(data = df, aes(x = factor(type),y = as.numeric(log2(value + 1)),fill=factor(type))) +
+  stat_boxplot(geom = "errorbar",linetype=1,width=0.3,position = "identity") +
+  geom_boxplot(outlier.fill = NA,outlier.shape=NA,width=0.6) +
+  stat_compare_means(method = "t.test",paired = FALSE,comparisons = list(c("Normal","Tumor")),label = "p.signif",label.y = c(10)) +
+  theme_bw(base_size = 18,base_family = "sans",base_line_size = 1.1) +
+  scale_y_continuous(expand = c(0.02,0.02),limits = c(0,12),breaks = c(0,4,8,12)) + 
+  scale_x_discrete(expand = c(0.3,0.3),breaks = c("Normal","Tumor"),labels=c("Normal\nn=42","Tumor\nn=599")) +
+  scale_fill_manual(values = c("Normal" = "#D9D9D9","Tumor" = "#A50F15")) +
+  labs(title = "Wnt signal gene(24) \nin TCGA",x=NULL,y="Expression log2(FPKM+1)",fill=NULL) +
+  theme(aspect.ratio = 1/0.75,
+        plot.title = element_text(size = 18,hjust = 0.5,vjust = 0.5,family = "sans"),
+        axis.text = element_text(colour = "black",size = 18,family = "sans"),
+        axis.text.y = element_text(size = 18,colour = "black",margin = margin(l = 0.1,r = 0.1,unit = "cm")),
+        axis.ticks.length = unit(2,'mm'),
+        panel.border = element_rect(size = 1.1),
+        panel.grid = element_blank()
+  ) +
+  guides(fill=FALSE)
+ggsave(paste("~/project/colon cancer/wnt target gene/FPKM plot/wnt 24 gene TCGA FPKM.pdf",sep = ""),p,height = 4.5,width = 3)
+p
 
 
+# wnt 44 gene fpkm  -------------------------------------------------------
+fpkm <- read.csv("~/project/colon cancer/chip-seq/chromHMM/geneCount/genebody2000bp/mm10_genebody_2000bp_merge_rna.csv",check.names = FALSE)
+file <- read.delim("~/project/colon cancer/wnt target gene/wnt_44_target_gene.txt",sep = "\t",header = FALSE,col.names = "gene_name")
+
+data <- fpkm[fpkm$gene_name %in% file$gene_name,]
+data <- data[,c(22,2:16)]
+data <- data[,c("gene_name","control_0","control_1","control_2","2week_0","2week_1","2week_2","4week_0","4week_1","4week_2",
+                  "7week_0","7week_1","7week_2","10week_0","10week_1","10week_2")]
+                   
+library(reshape2)
+df <- melt(data = data,id.vars = "gene_name",variable.name = "sample",value.name = "value")
+library(stringr)
+df["time"] <- str_split_fixed(df$sample,pattern = "_",n = 2)[,1]
+df["rep"] <- str_split_fixed(df$sample,pattern = "_",n = 2)[,2]
+df <- na.omit(df)
+
+df$time <- factor(rep(c("control","2week","4week","7week","10week"),each=141),levels = c("control","2week","4week","7week","10week"))
+
+library(ggpubr)
+library(ggplot2)
+p <- ggplot(data = df, aes(x = factor(sample),y = as.numeric(value),fill=time)) +
+  stat_boxplot(geom = "errorbar",linetype=1,width=0.45,position = "identity") +
+  geom_boxplot(outlier.fill = NA,outlier.shape=NA,width=0.9)  +
+  #geom_point(aes(fill=time,colour=time),alpha=0.5,size=2,shape=21,position = position_jitter(0.5)) +
+  #stat_compare_means(method = "t.test",paired = FALSE,comparisons = list(c("Normal","Tumor")),label = "p.signif",label.y = c(10)) +
+  theme_classic(base_size = 18,base_family = "sans",base_line_size = 1.1) +
+  scale_y_continuous(expand = c(0.01,0.01),limits = c(0,60),breaks = c(0,20,40,60)) +
+  scale_x_discrete(expand = c(0.05,0.05),labels=c("rep1","rep2\n0week","rep3","rep1","rep2\n2weeks","rep3","rep1","rep2\n4weeks","rep3",
+                   "rep1","rep2\n7weeks","rep3","rep1","rep2\n10weeks","rep3")) +
+  scale_fill_manual(values = c("#1B9E77","#66A61E","#7570B3","#E7298A","#D95F02")) +
+  labs(title = "Wnt signal gene (44)",x=NULL,y="Expression (FPKM)",fill=NULL) +
+  theme(#aspect.ratio = 1/0.75,
+        plot.title = element_text(size = 18,hjust = 0.5,vjust = 0.5,family = "sans"),
+        axis.text.x = element_text(colour = "black",size = 18,family = "sans",angle = 45,hjust = 1),
+        axis.text.y = element_text(size = 18,colour = "black",margin = margin(l = 0.1,r = 0.1,unit = "cm")),
+        axis.ticks.length = unit(2,'mm')
+        #panel.border = element_rect(size = 1.1),
+        #panel.grid = element_blank()
+  ) +
+  guides(fill=FALSE)
+ggsave(paste("~/project/colon cancer/wnt target gene/FPKM plot/wnt 44 gene AOMDSS FPKM.pdf",sep = ""),p,height = 4.5,width = 6)
+p
