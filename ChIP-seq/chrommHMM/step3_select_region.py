@@ -21,18 +21,6 @@ genecountDir = "/data3/zhaochen/project/colon_cancer/colon_chip/chromHMM/genecou
 samtoolsDir = "/data3/zhaochen/project/colon_cancer/colon_chip/samtools"
 chipDir = "/data3/zhaochen/project/colon_cancer/colon_chip/chromHMM/genecount/chip"
 
-def merge_state():
-    fa = pd.read_csv("ctrl_13_segments.bed",header=None,sep="\t",names=["chr","start","end","week0"])
-    fb = pd.read_csv("2weeks_13_segments.bed", header=None, sep="\t", names=["chr", "start", "end", "week2"])
-    data = pd.merge(fa, fb, on=["chr", "start", "end"])
-    fc = pd.read_csv("4weeks_13_segments.bed", header=None, sep="\t", names=["chr", "start", "end", "week4"])
-    data = pd.merge(data, fc, on=["chr", "start", "end"])
-    fd = pd.read_csv("7weeks_13_segments.bed", header=None, sep="\t", names=["chr", "start", "end", "week7"])
-    data = pd.merge(data, fd, on=["chr", "start", "end"])
-    fe = pd.read_csv("10weeks_13_segments.bed", header=None, sep="\t", names=["chr", "start", "end", "week10"])
-    data = pd.merge(data, fe, on=["chr", "start", "end"])
-    data.to_csv("merge_13_segments.txt", sep="\t", header=True, index=False)
-
 def get_genebody(length):
     file = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/mm10_annotation_genebody.bed"
     data = pd.read_csv(file,sep="\t",header=None,names=["chr","start","end","gene_name","score","strand","ensembl"])
@@ -131,7 +119,7 @@ def multiBamSummary_BEDfile(sample, bamlist, BEDfile, labels):
     RawCount = os.path.join(genecountDir,"chip/%s_outRawCounts.tab" % sample)
     cmd = "multiBamSummary BED-file --BED %s --bamfiles %s --numberOfProcessors 21 --minMappingQuality 30 --labels %s -out %s " \
           "--outRawCounts %s" % (BEDfile, bamlist, labels, out, RawCount)
-    #os.system(cmd)
+    os.system(cmd)
     print(cmd)
     return cmd
 
@@ -168,7 +156,7 @@ def rpm(rawCount):
                '4weeks-3-H3K27ac','4weeks-3-H3K27me3','4weeks-3-H3K4me1','4weeks-3-H3K4me3','4weeks-3-H3K9me2','4weeks-3-H3K9me3','4weeks-3-Input',
                '7weeks-1-H3K27ac','7weeks-1-H3K27me3','7weeks-1-H3K4me1','7weeks-1-H3K4me3','7weeks-1-H3K9me2','7weeks-1-H3K9me3','7weeks-1-Input',
                '7weeks-2-H3K27ac','7weeks-2-H3K27me3','7weeks-2-H3K4me1','7weeks-2-H3K4me3','7weeks-2-H3K9me2','7weeks-2-H3K9me3','7weeks-2-Input',
-               '7weeks-3-H3K27ac','7weeks-3-H3K27me3','7weeks-3-H3K4me1','7weeks-3-H3K4me3','7weeks-3-H3K9me2','7weeks-3-H3K9me3'	'7weeks-3-Input',
+               '7weeks-3-H3K27ac','7weeks-3-H3K27me3','7weeks-3-H3K4me1','7weeks-3-H3K4me3','7weeks-3-H3K9me2','7weeks-3-H3K9me3','7weeks-3-Input',
                'ctrl-1-H3K27ac','ctrl-1-H3K27me3','ctrl-1-H3K4me1','ctrl-1-H3K4me3','ctrl-1-H3K9me2','ctrl-1-H3K9me3','ctrl-1-Input',
                'ctrl-2-H3K27ac','ctrl-2-H3K27me3','ctrl-2-H3K4me1','ctrl-2-H3K4me3','ctrl-2-H3K9me2','ctrl-2-H3K9me3','ctrl-2-Input',
                'ctrl-3-H3K27ac','ctrl-3-H3K27me3','ctrl-3-H3K4me1','ctrl-3-H3K4me3','ctrl-3-H3K9me2','ctrl-3-H3K9me3','ctrl-3-Input']
@@ -185,29 +173,42 @@ def rpm(rawCount):
     #print(df[0:3])
 
 
-
-    for marker in Markers[0:5]:
+    # for marker in Markers[4]:
+    #     print(marker)
         #print(file.loc[:,file.columns.str.contains(marker)])
-        col_name = ["ctrl-1-%s" % marker,"ctrl-2-%s" % marker,"ctrl-3-%s" % marker,"2weeks-1-%s" % marker,
+    marker = Markers[4]
+    print(marker)
+    col_name = ["ctrl-1-%s" % marker,"ctrl-2-%s" % marker,"ctrl-3-%s" % marker,"2weeks-1-%s" % marker,
                     "2weeks-2-%s" % marker,"2weeks-3-%s" % marker,"4weeks-1-%s" % marker,"4weeks-2-%s" % marker,"4weeks-3-%s" % marker,
                     "7weeks-1-%s" % marker,"7weeks-2-%s" % marker,"7weeks-3-%s" % marker,"10weeks-1-%s" % marker,"10weeks-2-%s" % marker,
                     "10weeks-3-%s" % marker]
-        data = df.reindex(columns=col_name)
-        #print(data[0:3])
-        bamCount = list(dict[marker] / 1000000)
-        new_data = data.loc[:,data.columns.str.contains(marker)] / bamCount
-        #print(len(new_data))
-        #print(new_data.iloc[:, 0:3])
-        name = os.path.join(chipDir,marker,basename.replace("_outRawCounts.tab","_%s_rpm.txt" % marker))
-        new_data.to_csv(name, sep="\t", index=True,header=True)
-        #d = pd.concat([data,new_data],axis=1)
-        #print(d[0:2])
+    data = df.reindex(columns=col_name)
+    #print(data[0:3])
+    bamCount = list(dict[marker] / 1000000)
+    #print(data.loc[:, data.columns.str.contains(marker)])
+    new_data = data.loc[:,data.columns.str.contains(marker)] / bamCount
+    print(len(new_data))
+    print(new_data.iloc[:, 0:3])
+    name = os.path.join(chipDir,marker,basename.replace("_outRawCounts.tab","_%s_rpm.txt" % marker))
+    new_data.to_csv(name, sep="\t", index=True,header=True)
+    #d = pd.concat([data,new_data],axis=1)
+    #print(d[0:2])
 
+Times = ["ctrl","2weeks","4weeks","7weeks","10weeks"]
+Markers = ["H3K27ac","H3K4me1","H3K4me3","H3K27me3","H3K9me3","Input"]
 
+def merge_chromatin_rpm(segmentfile,sample):
+    segment = pd.read_csv(segmentfile, sep=",")
+    for marker in Markers[0:5]:
+        filename = os.path.join(chipDir,marker,"%s_%s_rpm.txt" % (sample,marker))
+        file = pd.read_csv(filename,sep="\t")
+        data = pd.merge(file,segment,on="gene_name")
+        output = filename.replace("_rpm.txt","_merge_chip.txt")
+        data.to_csv(output,sep="\t",header=True,index=False)
 
 
 if __name__ == "__main__":
-    step = 5
+    step = 10
 
     filelist = []
     segments = ["ctrl_13_segments.bed","2weeks_13_segments.bed","4weeks_13_segments.bed","7weeks_13_segments.bed","10weeks_13_segments.bed"]
@@ -235,6 +236,8 @@ if __name__ == "__main__":
                 #     chromatin_on_gene(genebody=file)
                 # step2 calculate
                 if "bp_segments_wo.bed" in file:
+                    #if "genetss" in file:
+                    print(file)
                     calculate(segmentbed=file)
 
     if step < 4:
@@ -260,12 +263,26 @@ if __name__ == "__main__":
         bamlist = " ".join(bamlist)
         labels = " ".join(labels)
 
-        for root,dirs,files in os.walk(chromDir):
-            for file in files:
-                if "bp.bed" in file:
-                    sample = file.split(".")[0]
-                    file = os.path.join(root,file)
-                    multiBamSummary_BEDfile(sample=sample, BEDfile=file, bamlist=bamlist, labels=labels)
+        # for root,dirs,files in os.walk(chromDir):
+        #     for file in files:
+        #         if "bp.bed" in file:
+        #             sample = file.split(".")[0]
+        #             file = os.path.join(root,file)
+        #             print(file)
+        #             multiBamSummary_BEDfile(sample=sample, BEDfile=file, bamlist=bamlist, labels=labels)
+
+        #### this step for tss removed
+        filelist = ["/data3/zhaochen/project/colon_cancer/colon_chip/chromHMM/mm10_genetss_2000bp.bed",
+                    "/data3/zhaochen/project/colon_cancer/colon_chip/chromHMM/mm10_genetss_4000bp.bed",
+                    "/data3/zhaochen/project/colon_cancer/colon_chip/chromHMM/mm10_genetss_10000bp.bed"]
+
+        for file in filelist:
+            filename = os.path.basename(file)
+            sample = filename.split(".")[0]
+            multiBamSummary_BEDfile(sample=sample, BEDfile=file, bamlist=bamlist, labels=labels)
+            RawCount = os.path.join(genecountDir, "chip/%s_outRawCounts.tab" % sample)
+            print(RawCount)
+            rpm(rawCount=RawCount)
 
     if step < 6:
         for root,dirs,files in os.walk(chipDir):
@@ -275,4 +292,16 @@ if __name__ == "__main__":
                     file = os.path.join(root,file)
                     rpm(rawCount=file)
 
+        #rpm(rawCount="/data3/zhaochen/project/colon_cancer/colon_chip/chromHMM/genecount/chip/mm10_genebody_0bp_outRawCounts.tab")
+
+    if step > 7:
+        for root,dirs,files in os.walk(genecountDir):
+            for file in files:
+                if "segments_wo_geneCount_alltime.csv" in file:
+                    sample = file.split("_segments")[0]
+                    file = os.path.join(root,file)
+                    print(sample)
+                    #print(file)
+                    merge_chromatin_rpm(segmentfile=file,sample=sample)
+        
     #logging.debug('End of program')

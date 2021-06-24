@@ -22,16 +22,15 @@ plotSaccter <- function (filename,rnafile,marker,region,time,cols) {
 
   data <- merge(x = rna_df,y = chip_df)
   #write.table(data,file = "/data3/zhaochen/project/colon_cancer/colon_chip/chromHMM/genecount/chip/H3K27ac/mm10_genebody_0bp_chip_rna.txt",sep = "\t")
-  data$fpkm <- log2(data$fpkm + 1)
-  data$rpm <- log2(data$rpm)
+
 
   correlation <- cor(data$fpkm,data$rpm,method = "spearman")
   correlation
 
-  ggplot(data,aes(y = fpkm,x = rpm)) +
+  ggplot(data,aes(y = log2(fpkm+1),x = log2(rpm))) +
     geom_point(position = position_jitter(width = 0.3,height = 0.06),alpha=0.4,shape=19,size=1.5,colour="grey60")  +
   #  stat_density2d(aes(alpha=..density..),geom = "tile",contour = FALSE) +
-    stat_smooth(formula = data$rpm ~ data$fpkm,method = lm,se = FALSE,colour="black") +
+  #  stat_smooth(formula = data$rpm ~ data$fpkm,method = lm,se = FALSE,colour="black") +
     theme_classic(base_size = 18,base_family = "sans",base_line_size = 1.1) +
     #annotate("text",label=paste("cor:",round(correlation,4),sep = " "),x = 500,y = 1500,parse=TRUE,hjust=0.5,vjust=0.5,size=8) +
     scale_x_continuous(expand = c(0.03,0)) +
@@ -48,55 +47,65 @@ Markers <- c("H3K27ac","H3K4me1","H3K4me3","H3K27me3","H3K9me3")
 rnafiles <- list.files(path = genecountDir,pattern = "merge_rna.csv")
 
 # need change time and cols
+#### week0
 for (marker in Markers) {
   for (rnafile in rnafiles) {
     a <- basename(rnafile)
     region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
     rnafile <- paste(genecountDir,rnafile,sep = "")
     filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
-    plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "0week",cols=1:4)
+    print(rnafile)
+    print(filename)
+    plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "0week",cols=c(1,3,4))
   }
 }
 
-# for (marker in Markers) {
-#   for (rnafile in rnafiles) {
-#     a <- basename(rnafile)
-#     region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
-#     rnafile <- paste(genecountDir,rnafile,sep = "")
-#     filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
-#     plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "2weeks",cols=c(1,5:7))
-#   }
-# }
-#
-# for (marker in Markers) {
-#   for (rnafile in rnafiles) {
-#     a <- basename(rnafile)
-#     region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
-#     rnafile <- paste(genecountDir,rnafile,sep = "")
-#     filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
-#     plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "4weeks",cols=c(1,8:10))
-#   }
-# }
-#
-# for (marker in Markers) {
-#   for (rnafile in rnafiles) {
-#     a <- basename(rnafile)
-#     region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
-#     rnafile <- paste(genecountDir,rnafile,sep = "")
-#     filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
-#     plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "7weeks",cols=c(1,11:13))
-#   }
-# }
-#
-# for (marker in Markers) {
-#   for (rnafile in rnafiles) {
-#     a <- basename(rnafile)
-#     region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
-#     rnafile <- paste(genecountDir,rnafile,sep = "")
-#     filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
-#     plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "10weeks",cols=c(1,14:16))
-#   }
-# }
+### week2
+for (marker in Markers) {
+  for (rnafile in rnafiles) {
+    a <- basename(rnafile)
+    region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
+    rnafile <- paste(genecountDir,rnafile,sep = "")
+    filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
+    plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "2weeks",cols=c(1,5:7))
+  }
+}
+
+### week4
+for (marker in Markers) {
+  for (rnafile in rnafiles) {
+    a <- basename(rnafile)
+    region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
+    rnafile <- paste(genecountDir,rnafile,sep = "")
+    filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
+    plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "4weeks",cols=c(1,8:10))
+  }
+}
+
+#### week7
+for (marker in Markers) {
+  for (rnafile in rnafiles) {
+    print(marker)
+    a <- basename(rnafile)
+    region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
+    rnafile <- paste(genecountDir,rnafile,sep = "")
+    filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
+    plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "7weeks",cols=c(1,11:13))
+  }
+}
+
+#### week10
+for (marker in Markers) {
+  for (rnafile in rnafiles) {
+    print(marker)
+    a <- basename(rnafile)
+    region <- paste(unlist(strsplit(a,split = "_"))[2],unlist(strsplit(a,split = "_"))[3],sep = "_")
+    rnafile <- paste(genecountDir,rnafile,sep = "")
+    filename <- paste(genecountDir,"chip/",marker,"/","mm10_",region,"_",marker,"_rpm.txt",sep = "")
+    plotSaccter(filename = filename,rnafile = rnafile,marker = marker,region = region,time = "10weeks",cols=c(1,14:16))
+  }
+}
+
 # png("/data3/zhaochen/project/colon_cancer/colon_chip/chromHMM/genecount/chip/H3K27ac/H3K27ac_0week_genebody_log2_scatter.png")
 # smoothScatter(data$rpm, data$fpkm,pch = 19,
 #               transformation = function(x) x ^ 0.5 # Scale
