@@ -20,14 +20,18 @@ class get_region():
         self.mm10_annotation_genebody = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/mm10_annotation_genebody.bed"  # have removed chrM
         self.mm10_TSS_10kb = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/H3K27ac/mm10_TSS_10kb.txt"
         self.mm10_TSS_2kb = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/H3K4me3/mm10_TSS_2kb.txt"
+        self.mm10_TSS_1500bp = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/tf_region/mm10_TSS_1500bp.txt"
+        self.mm10_down_10kb = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/tf_region/mm10_TSS_down10kb.txt"
+        self.mm10_up_10kb = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/tf_region/mm10_TSS_up10kb.txt"
+        self.mm10_up_100kb = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/tf_region/mm10_TSS_up100kb.txt"
+        self.mm10_down_100kb = "/data3/zhaochen/project/colon_cancer/colon_chip/chip_maSigPro/tf_region/mm10_TSS_down100kb.txt"
 
-
-    # for H3K27ac and H3K4me1
+    # for H3K27ac and H3K4me1 get upstream 1500-10000kb
     def get_TSS(self):
         df = pd.read_csv(gr.mm10_annotation_genebody, sep="\t", index_col=False,
                          names=["chr","start","end","gene_name","score","strand","ensembl"])
 
-        def f(df, distance1=10000, distance2=1500):
+        def f(df, distance1=100000, distance2=10000):
             if df["strand"] == "+":
                 df["new_start"] = df["start"] - distance1
                 df["new_end"] = df["start"] - distance2
@@ -37,10 +41,28 @@ class get_region():
             return df
 
         data = df.apply(f, axis=1)
-        new_data = data[["chr","new_start","new_end","ensembl"]]
-        new_data.to_csv(gr.mm10_TSS_10kb,sep="\t",header=False,index=False)
+        new_data = data[["chr","new_start","new_end","gene_name","ensembl"]]
+        new_data.to_csv(gr.mm10_up_100kb,sep="\t",header=False,index=False)
 
-    # for H3K27me3
+    # for all marker get downstream 1500-10000kb
+    def get_downstream(self):
+        df = pd.read_csv(gr.mm10_annotation_genebody, sep="\t", index_col=False,
+                         names=["chr","start","end","gene_name","score","strand","ensembl"])
+
+        def f(df,distance1=1500,distance2=10000):
+            if df["strand"] == "+":
+                df["new_start"] = df["start"] + distance1
+                df["new_end"] = df["start"] + distance2
+            else:
+                df["new_start"] = df["end"] - distance2
+                df["new_end"] = df["end"] - distance1
+            return df
+
+        data = df.apply(f,axis=1)
+        new_data = data[["chr","new_start","new_end","gene_name","ensembl"]]
+        new_data.to_csv(gr.mm10_down_10kb, sep="\t", header=False, index=False)
+
+    # for H3K27me3 get genebody upstream and downstream 10kb
     def get_genebody(self, marker, distance):
         df = pd.read_csv(gr.mm10_annotation_genebody, sep="\t", index_col=False,
                          names=["chr","start","end","gene_name","score","strand","ensembl"])
@@ -53,7 +75,7 @@ class get_region():
             print("right")
         else:
             print("wrong")
-        df = df[["chr","start","end","ensembl"]]
+        df = df[["chr","start","end","gene_name","ensembl"]]
         df.to_csv(os.path.join(gr.path,marker,"mm10_genebody_%s.txt" % distance),sep="\t", header=False, index=False)
 
     # for H3K4me3
@@ -61,7 +83,7 @@ class get_region():
         df = pd.read_csv(gr.mm10_annotation_genebody, sep="\t", index_col=False,
                          names=["chr", "start", "end", "gene_name", "score", "strand", "ensembl"])
 
-        def f(df,distance=2000):
+        def f(df,distance=1500):
             if df["strand"] == "+":
                 df["new_start"] = df["start"] - distance
                 df["new_end"] = df["start"] + distance
@@ -71,8 +93,8 @@ class get_region():
             return df
 
         data = df.apply(f, axis=1)
-        new_data = data[["chr", "new_start", "new_end", "ensembl"]]
-        new_data.to_csv(gr.mm10_TSS_2kb, sep="\t", header=False, index=False)
+        new_data = data[["chr", "new_start", "new_end", "gene_name","ensembl"]]
+        new_data.to_csv(gr.mm10_TSS_1500bp, sep="\t", header=False, index=False)
 
 
 class calculate_reads_count():
@@ -130,8 +152,6 @@ class calculate_reads_count():
 
 
 
-
-
 if __name__ == "__main__":
     step = 8
     gr = get_region()
@@ -140,13 +160,14 @@ if __name__ == "__main__":
     Markers = ["Input", "H3K27ac", "H3K4me1", "H3K4me3", "H3K27me3", "H3K9me3"]
 
     if step < 1:
-        #gr.get_TSS()
+        gr.get_TSS()
         #gr.get_2kb()
-        gr.get_genebody(marker="H3K27me3",distance=10000)
+        #gr.get_genebody(marker="H3K27me3",distance=10000)
+        #gr.get_downstream()
 
 
     # all chip-seq data correlation and PCA
-    if step > 2:
+    if step < 2:
         bamlist = []
         labels = []
         for root,dirs,files in os.walk(rc.bamDir):
@@ -194,7 +215,7 @@ if __name__ == "__main__":
         for root,dirs,files in os.walk(rc.samtoolsDir):
             for file in files:
                 if os.path.splitext(file)[1] == ".bam":
-                    if Markers[5] in file or "Input" in file:
+                    if Markers[1] in file or "Input" in file:
                         bamlist.append(os.path.join(root, file))
                         label = file.split("_")[0]
                         labels.append(label)
@@ -208,15 +229,15 @@ if __name__ == "__main__":
         labels = " ".join(labels)
 
         # H3K27ac
-        #rc.multiBamSummary_BEDfile(marker=Markers[1],BEDfile=gr.mm10_TSS_10kb, bamlist=bamlist, labels=labels)
+        #rc.multiBamSummary_BEDfile(marker=Markers[1],BEDfile=rc.mm10_genebody_10kb, bamlist=bamlist, labels=labels)
         # H3K27me3
         #rc.multiBamSummary_BEDfile(marker=Markers[4], BEDfile=rc.mm10_genebody_10kb, bamlist=bamlist, labels=labels)
         # H3K4me1
-        #rc.multiBamSummary_BEDfile(marker=Markers[2], BEDfile=gr.mm10_TSS_10kb, bamlist=bamlist, labels=labels)
+        #rc.multiBamSummary_BEDfile(marker=Markers[2], BEDfile=rc.mm10_genebody_10kb, bamlist=bamlist, labels=labels)
         # H3K4me3
-        #rc.multiBamSummary_BEDfile(marker=Markers[3], BEDfile=gr.mm10_TSS_2kb, bamlist=bamlist, labels=labels)
+        #rc.multiBamSummary_BEDfile(marker=Markers[3], BEDfile=rc.mm10_genebody_10kb, bamlist=bamlist, labels=labels)
         # H3K9me3
-        rc.multiBamSummary_BEDfile(marker=Markers[5],BEDfile=gr.mm10_annotation_genebody,bamlist=bamlist,labels=labels)
+        #rc.multiBamSummary_BEDfile(marker=Markers[5],BEDfile=gr.mm10_annotation_genebody,bamlist=bamlist,labels=labels)
 
         # signal marker plotPCA
         if step < 5:
