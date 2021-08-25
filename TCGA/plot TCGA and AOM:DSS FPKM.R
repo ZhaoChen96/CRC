@@ -48,32 +48,34 @@ symbol_to_ensembl = function(symbol_list){
   #ensembl = ensembl[,2]
   return(ensembl) 
 }
-
 library(dplyr)
 fpkmfile = symbol_to_ensembl(symbol_list = fpkm$ensembl)
 fpkmfile <- inner_join(fpkmfile,fpkm,by="ensembl")
+
+fpkmfile <- read.csv("~/project/colon cancer/chip-seq/chromHMM/geneCount/genebody2000bp/mm10_genebody_2000bp_merge_rna.csv",check.names = FALSE)
+fpkmfile <- fpkmfile[,c(2:16,22)]
 tf_fpkm <- function(gene,ymax) {
-  genedf <- subset(fpkmfile,symbol == gene)
-  genedf <- genedf[,-1]
-  df <- melt(genedf,id.vars="symbol",variable.name = "time",value.name = "fpkm")
+  genedf <- subset(fpkmfile,gene_name == gene)
+  #genedf <- genedf[,-1]
+  df <- melt(genedf,id.vars="gene_name",variable.name = "time",value.name = "fpkm")
   times <- factor(c("control","2weeks","4weeks","7weeks","10weeks"),levels =c("control","2weeks","4weeks","7weeks","10weeks"))
   timepoint <- rep(times,each=3)
   data <- cbind(df,timepoint)
   p <- ggplot(data,aes(x = factor(timepoint),y = fpkm,size=fpkm)) +
     geom_point(shape=21,colour="white",fill="#1B9E77",alpha=0.6) + #,position = position_jitter(width = 0.25,height = 0)
     theme_classic(base_size = 18,base_family = "sans",base_line_size = 1.1) +
-    labs(title = gene,x="week(s)",y="RNA expression (FPKM)",size=NULL) +
+    labs(title = gene,x="week(s)",y="Expression (FPKM)",size=NULL) +
     scale_y_continuous(expand = c(0,0.01),limits = c(0,ymax)) +
     scale_x_discrete(breaks=times,labels=c(0,2,4,7,10)) +
     theme(aspect.ratio = 1/0.618,
-          #plot.margin = margin(t=2,b=2,l=0.5,r=0.5,unit = "cm"),
-          plot.title = element_text(size = 18,face = "bold",margin = margin(b=0,unit = "cm"),hjust = 0.5,vjust = 0.5),
-          axis.title.y = element_text(margin = margin(t = 0,b = 0,l = 0.1,r = 0.1,unit = "cm")),
-          axis.text = element_text(colour = "black",size = 18,margin = margin(t = 0.1,b = 0.1,l = 0.1,r = 0.1,unit = "cm")),
-          axis.text.x = element_text(angle = 0,hjust = 0.5)) +
+          plot.margin = margin(t=0,b=0,l=0,r=0,unit = "cm"),
+          plot.title = element_text(size = 18,face = "bold",margin = margin(b=0.3,unit = "cm"),hjust = 0.5,vjust = 0.5),
+          axis.title.y = element_text(margin = margin(t = 0,b = 0,l = 0.1,r = 0.1,unit = "cm"),size = 18),
+          axis.text = element_text(colour = "black",size = 18,margin = margin(t = 0.1,b = 0.1,l = 0.2,r = 0.1,unit = "cm")),
+          axis.text.x = element_text(angle = 0,hjust = 0.5,size=18)) +
     guides(size=FALSE)
-  print(p)
-  ggsave(paste("~/project/colon cancer/RNA-seq/writer_FPKM/",gene,"_FPKM.png",sep = "")) #,width = 3,height = 3.7) 
+  ggsave(paste("~/project/colon cancer/RNA-seq/writer_FPKM/",gene,"_FPKM.png",sep = ""),p,width = 3,height = 3.7) 
+  p
 }
 
 tf_fpkm(gene = "Otx2",ymax = 0.3)
